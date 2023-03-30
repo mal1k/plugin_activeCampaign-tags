@@ -33,7 +33,13 @@ function schedule_event_tags_handler($post_id) {
     $tagsInActiveCampaign = array();
 
     // get the list of tags associated with the post
-    $tags = wp_get_post_tags($post_id, array('fields' => 'names'));
+    $tags = get_terms(
+        array(
+    	'taxonomy' => 'product_tag',
+	    'object_ids' => $post_id,
+    	'fields' => 'names',
+        )
+    );
 
     foreach ($subscribers as $subscriber)
         $activeCampaignTags->addUserToArrayByEmail($subscriber);
