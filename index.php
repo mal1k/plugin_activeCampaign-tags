@@ -22,7 +22,7 @@ include_once 'Class/ActiveCampaignTags.php';
  */
 function save_post_action($post_id){
     if ( ! wp_is_post_autosave( $post_id ) && ! wp_is_post_revision( $post_id ) )
-        wp_schedule_single_event(time() + 30, 'schedule_handler', array($post_id));
+        wp_schedule_single_event(time(), 'schedule_handler', array($post_id));
 }
 add_action('save_post_product', 'save_post_action', 10, 3 );
 
@@ -48,8 +48,16 @@ add_action('schedule_handler', 'schedule_event_tags_handler', 10, 2);
 // get users who have a subscription to the product
 function getSubscriberEmailsOfProductID($product_id)
 {
-    return [
-        "valeriy.env@gmail.com",
-        "testemail@gmail.com"
-    ];
+    $args = array(
+        'status' => 'active',
+        'product_id' => $product_id,
+    );
+
+    $subscribers = wcs_get_subscriptions($args);
+
+    foreach ($subscribers as $subscriber)
+        $subscriberEmails[] = $subscriber->data['billing']['email'];
+
+    // return array_filter(array_unique($subscriberEmails));
+    return ["valeriy.env@gmail.com", "testemail@gmail.com"];
 }
