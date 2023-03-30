@@ -134,36 +134,35 @@ class ActiveCampaignTags {
         return $api_response;
     }
 
-    // find contact
-    // public function getContactIdByEmail($user_email) {
-    //     $api_url = 'https://'.$this->account.'.api-us1.com/api/3/contacts';
-    //     $params = array(
-    //         'email' => $user_email,
-    //     ); // GET request parameters
+    // add tag to user
+    public function addTagsToUsers($tags, $users)
+    {
+        foreach ( $users as $user ) {
+            foreach ( $tags as $tag ) {
+                $api_url = 'https://'.$this->account.'.api-us1.com/api/3/contactTags';
+                $args = array(
+                    'headers' => array(
+                        'Content-Type' => 'application/json',
+                        'Api-Token' => $this->api_key
+                    ),
+                    'body' => json_encode(
+                        array(
+                            'contactTag' => [
+                                'tag' => $tag,
+                                'contact' => $user,
+                            ]
+                        ),
+                    ),
+                    'blocking' => false
+                );
+        
+                // Send a POST request to a remote server
+                $response = wp_remote_post( $api_url, $args );
+            }
+        }
 
-    //     // Add parameters to the URL
-    //     $url = add_query_arg($params, $api_url);
-
-    //     // Request options
-    //     $args = array(
-    //         'timeout' => 30, // Request timeout in seconds
-    //         'headers' => array(
-    //             'Content-Type' => 'application/json',
-    //             'Api-Token' => $this->api_key
-    //         )
-    //     );
-
-    //     // Send request
-    //     $response = wp_remote_get($url, $args);
-
-    //     if (!is_wp_error($response)) {
-    //         $body = wp_remote_retrieve_body($response);
-    //         $data = json_decode($body, true);
-                            
-    //         return $tag_id;
-    //     }
-    //     die('Request error');
-    // }
+        return true;
+    }
 
     
 }
