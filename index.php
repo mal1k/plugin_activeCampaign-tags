@@ -109,7 +109,7 @@ function on_new_subscription_active($subscription) {
     ) );
 
     // Processing the response
-    if ( !is_wp_error( $response ) && $response['response']['code'] == 200 ) {
+    if ( !is_wp_error( $response ) ) {
         $result = json_decode( $response['body'] );
         if ( isset( $result->contacts ) && !empty( $result->contacts ) ) {
             $contact_id = $result->contacts[0]->id;
@@ -129,7 +129,7 @@ function on_new_subscription_active($subscription) {
             ) );
 
             // Processing the response
-            if ( !is_wp_error( $response ) && $response['response']['code'] == 200 ) {
+            if ( !is_wp_error( $response ) ) {
                 $result = json_decode( $response['body'] );
                 $contact_id = $result->contact->id;
             }
