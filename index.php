@@ -67,3 +67,68 @@ function getSubscriberEmailsOfProductID($product_id)
     // return array_filter(array_unique($subscriberEmails));
     return ["valeriy.env@gmail.com", "testemail@gmail.com"];
 }
+
+add_action( 'woocommerce_subscription_status_active', 'on_new_subscription_active', 10, 1 );
+function on_new_subscription_active($subscription) {
+    // Get subscription data
+    $customer_id = $subscription->get_customer_id();
+    $product_id = $subscription->get_product_id();
+
+    // Get the user object by ID
+    $user = get_user_by('ID', $customer_id);
+    $email = $user->user_email;
+    $first_name = $user->first_name;
+    $last_name = $user->last_name;
+
+    // Get product tags by ID
+    $tags = get_terms(
+        array(
+    	'taxonomy' => 'product_tag',
+	    'object_ids' => $product_id,
+    	'fields' => 'names',
+        )
+    );
+
+    // Create a new contact in ActiveCampaign or get its ID
+    $api_key = ActiveCampaignTags::API_TOKEN; // Specify your ActiveCampaign API key
+    $account_id = ActiveCampaignTags::ACCOUNT_ID; // Specify your ActiveCampaign Account ID
+    $api_url = 'https://'.$account_id.'.api-us1.com/api/3/'; // Specify URL for API requests
+
+    // Get contact ID by email
+    $response = wp_remote_get( $api_url . 'contacts', array(
+        'headers' => array( 'Api-Token' => $api_key ),
+        'body' => array(
+            'email' => $email,
+        ),
+    ) );
+
+    // Processing the response
+    if ( !is_wp_error( $response ) && $response['response']['code'] == 200 ) {
+        $result = json_decode( $response['body'] );
+        if ( isset( $result->contacts ) && !empty( $result->contacts ) ) {
+            $contact_id = $result->contacts[0]->id;
+        } else {
+            // Contact not found, create a new one
+            $contact_data = array(
+                'email' => $email,
+                'firstName' => $first_name,
+                'lastName' => $last_name,
+            );
+
+            $response = wp_remote_post( $api_url . 'contacts', array(
+                'headers' => array( 'Api-Token' => $api_key ),
+                'body' => json_encode( $contact_data ),
+            ) );
+
+            // Processing the response
+            if ( !is_wp_error( $response ) && $response['response']['code'] == 200 ) {
+                $result = json_decode( $response['body'] );
+                $contact_id = $result->contact->id;
+            }
+        }
+    }
+
+    // Add product tags to contact profile
+    if ( !empty($tags) && !empty($contact_id) )
+        (new ActiveCampaignTags)->addTagsToUsers($tags, [$contact_id]);
+}
