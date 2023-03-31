@@ -70,9 +70,15 @@ function getSubscriberEmailsOfProductID($product_id)
 
 add_action( 'woocommerce_subscription_status_active', 'on_new_subscription_active', 10, 1 );
 function on_new_subscription_active($subscription) {
+    $activeCampaignTags = new ActiveCampaignTags();
+
     // Get subscription data
     $customer_id = $subscription->get_customer_id();
-    $product_id = $subscription->get_product_id();
+
+    $order_items = $subscription->get_items();
+    // Loop through order items
+    foreach ($order_items as $item)
+        $product_id = $item->get_product_id();
 
     // Get the user object by ID
     $user = get_user_by('ID', $customer_id);
@@ -110,14 +116,16 @@ function on_new_subscription_active($subscription) {
         } else {
             // Contact not found, create a new one
             $contact_data = array(
-                'email' => $email,
-                'firstName' => $first_name,
-                'lastName' => $last_name,
+                'contact' => [
+                    'email' => $email,
+                    'firstName' => $first_name,
+                    'lastName' => $last_name,
+                ]
             );
 
             $response = wp_remote_post( $api_url . 'contacts', array(
                 'headers' => array( 'Api-Token' => $api_key ),
-                'body' => json_encode( $contact_data ),
+                'body' => json_encode($contact_data),
             ) );
 
             // Processing the response
@@ -126,9 +134,15 @@ function on_new_subscription_active($subscription) {
                 $contact_id = $result->contact->id;
             }
         }
+
+        // Add product tags to contact profile
+        if ( !empty($tags) && !empty($contact_id) ) {
+            foreach ($tags as $tag)
+                $tagsInActiveCampaign[] = $activeCampaignTags->getTagIdByName($tag);
+
+            $activeCampaignTags->addTagsToUsers(array_unique($tagsInActiveCampaign), [$contact_id]);
+        }
     }
 
-    // Add product tags to contact profile
-    if ( !empty($tags) && !empty($contact_id) )
-        (new ActiveCampaignTags)->addTagsToUsers($tags, [$contact_id]);
+    return true;
 }
